@@ -38,7 +38,7 @@ class Login(QWidget):
 
         # אם יש טקסט בשני השדות, שלח את ההודעה
         if user_name_text and user_password_text:
-            message = f"Username: {user_name_text}, Password: {user_password_text}"
+            message = f"LOGIN_{user_name_text}_{user_password_text}"
             try:
                 # שלח את ההודעה לשרת
                 self.client_socket.send(message.encode('utf-8'))

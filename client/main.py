@@ -1,6 +1,9 @@
 import sys
 from PyQt6.QtWidgets import QWidget, QStackedWidget, QVBoxLayout, QApplication
 import socket
+#QVBoxLayout-פריסת תצוגה בצורה אנכית(אחד מתחת לשני)
+#QWidget- מחלקה בסיסית לאלמנטים גרפיים שמוצגים כמו: כפתור, תיבה ועוד.
+#QApplication-מנהל את האירועים במערכת
 
 from login import Login
 from shifts import Shifts
