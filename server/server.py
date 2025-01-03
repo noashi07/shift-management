@@ -1,80 +1,74 @@
 import socket
 import threading
+import json
+
+from db import get_session
+from models.user import User
+
+db = get_session()
 
 
-import sys
+def handle_routing(request):
+    request_line = request.splitlines()[0]
 
-from server.db_functions import add_user
+    try:
+        method, path, _ = request_line.split()
 
-sys.path.append("C:\\projects\\shift-management\\server")
+        if method == "GET" and path == "/user":
+            new_user = User(username="Noa", password="123")
+            db.add(new_user)
+            db.commit()
+            return new_user, 200
 
-import db_functions
-
-
-# השתמש בייבוא מקומי
-from db_functions import user_exists
-
-
-# פונקציה לטיפול בכל לקוח
-def handle_client(client_socket, client_address):
-    print(f"New connection established with {client_address}")
-
-    # תקשורת עם הלקוח
-    while True:
-        response = ""
-        # קבלת הודעה מהלקוח
-        message = client_socket.recv(1024).decode('utf-8')
-        if not message:  # אם הלקוח סגר את החיבור
-            break
-        print(f"Received from {client_address}: {message}")
-        if message[:5] == "LOGIN":
-            msg_list = message.split('_')
-            if user_exists(msg_list[1]):
-                print("exists")
-                response = "exists"
-        elif  message[:8] == "REGISTER":
-            msg_list = message.split('_')
-            if user_exists(msg_list[1]):
-                print("already exists")
-            else:
-                add_user(message[1],message[2])
-                response = "register"
+        return [{"error": "Not Found"}], 404
+    except Exception as err:
+        return [{"error": "Bad Request", "reason": str(err)}], 400
 
 
-        # שליחת תשובה ללקוח
-       # response = input("Enter message to send to client: ")
-        client_socket.send(response.encode('utf-8'))
+def handle_request(client_socket):
+    try:
+        request = client_socket.recv(1024).decode()
 
-    print(f"Closing connection with {client_address}")
-    client_socket.close()
+        response_body, status_code = handle_routing(request)
+        response_body_json = json.dumps(response_body)
+
+        status_message = "OK" if status_code == 200 else "Error"
+
+        response = (f"HTTP/1.1 {status_code} {status_message}\r\n"
+                    f"Content-Type: application/json\r\n"
+                    f"Content-Length: {len(response_body_json)}\r\n\r\n"
+                    f"{response_body_json}")
+
+        client_socket.sendall(response.encode())
+    except Exception as e:
+        print(f"Error handling request: {e}")
+    finally:
+        client_socket.close()
 
 
-# פונקציה להפעלת השרת
-def start_server():
-    # יצירת סוקט (socket) חדש
+def start_server(hostname: str, port: int):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # הגדרת כתובת ה-IP והפורט להאזנה
-    host = '127.0.0.1'  # IP המקומי (localhost)
-    port = 12345  # הפורט שבו השרת יאזין
-
-    # חיבור הסוקט לכתובת ופורט
-    server_socket.bind((host, port))
-
-    # הגדרת מספר החיבורים המקסימליים
+    server_socket.bind((hostname, port))
     server_socket.listen(5)
-    print(f"Server listening on {host}:{port}")
+    print(f"Server started on http://{hostname}:{port}")
 
-    # קבלת חיבורים מלקוחות
-    while True:
-        client_socket, client_address = server_socket.accept()
+    try:
+        while True:
+            client_socket, client_address = server_socket.accept()
+            print(f"Connection from {client_address}")
 
-        # יצירת חוט חדש לכל לקוח שמתחבר
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-        client_thread.start()
-
-    server_socket.close()
+            client_thread = threading.Thread(target=handle_request, args=(client_socket,))
+            client_thread.daemon = True
+            client_thread.start()
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
+    finally:
+        db.close()
+        server_socket.close()
 
 
 if __name__ == "__main__":
-    start_server()
+    hostname = 'localhost'
+    port = 8080
+
+    start_server(hostname, port)
