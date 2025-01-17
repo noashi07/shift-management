@@ -12,9 +12,11 @@ Session = sessionmaker(bind=engine)
 
 
 def init_db():
+    """This is used to initialize the tables in the db on startup"""
     Base.metadata.create_all(engine)
     print("Database connected and tables created.")
 
 
 def get_session():
+    """"This is used to return the session (actual connection) to the db.  """
     return Session()

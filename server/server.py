@@ -2,10 +2,11 @@ import socket
 import threading
 import json
 
-from db import get_session
 from models.user import User
+from models.db.db import get_session, init_db
 
-db = get_session()
+session = get_session()
+init_db()
 
 
 def handle_routing(request):
@@ -14,14 +15,15 @@ def handle_routing(request):
     try:
         method, path, _ = request_line.split()
 
-        if method == "GET" and path == "/user":
+        if method == "POST" and path == "/user":
             new_user = User(username="Noa", password="123")
-            db.add(new_user)
-            db.commit()
-            return new_user, 200
+            session.add(new_user)
+            session.commit()
+            return new_user.__repr__(), 200
 
         return [{"error": "Not Found"}], 404
     except Exception as err:
+        session.rollback()
         return [{"error": "Bad Request", "reason": str(err)}], 400
 
 
@@ -29,7 +31,9 @@ def handle_request(client_socket):
     try:
         request = client_socket.recv(1024).decode()
 
+        # אם התהליך הצליח נקבל קוד 200 ואובייקט מסוג USER שנוצר מהמידע ששלח הלקוח
         response_body, status_code = handle_routing(request)
+        # ממיר את האובביט מסוג User ל-json
         response_body_json = json.dumps(response_body)
 
         status_message = "OK" if status_code == 200 else "Error"
@@ -63,7 +67,7 @@ def start_server(hostname: str, port: int):
     except KeyboardInterrupt:
         print("\nShutting down server...")
     finally:
-        db.close()
+        session.close()
         server_socket.close()
 
 
