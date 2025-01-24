@@ -9,14 +9,37 @@ session = get_session()
 init_db()
 
 
+def extract_body_from_request(request: str):
+    # Split the request by the double newline to separate headers from body
+    headers, body = request.split("\r\n\r\n", 1)
+
+    # Check if body is in JSON format, which is common for POST requests
+    try:
+        # Parse the body using json.loads() and return the resulting dictionary
+        body_dict = json.loads(body)
+        return body_dict
+    except json.JSONDecodeError:
+        # Handle error in case the body is not valid JSON
+        print("Error: Body is not valid JSON")
+        return None
+
+
 def handle_routing(request):
     request_line = request.splitlines()[0]
 
     try:
         method, path, _ = request_line.split()
 
+        if method == "GET" and path == "/users":
+            users = [json.loads(user.__repr__()) for user in session.query(User).all()]
+
+            return users, 200
+
         if method == "POST" and path == "/user":
-            new_user = User(username="Noa", password="123")
+            data = extract_body_from_request(request)
+
+            # יצירת משתמש חדש עם שם משתמש וסיסמא מתוך הבקשה
+            new_user = User(username=data['username'], password=data['password'])
             session.add(new_user)
             session.commit()
             return new_user.__repr__(), 200
