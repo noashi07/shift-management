@@ -2,6 +2,8 @@ import socket
 import threading
 import json
 
+from sqlalchemy import update
+
 from models.user import User
 from models.db.db import get_session, init_db
 
@@ -29,6 +31,23 @@ def handle_routing(request):
 
     try:
         method, path, _ = request_line.split()
+
+        route_parameters = str(path).split('/')[2:]
+
+        if method == "PATCH" and 'user' in path:
+            data = extract_body_from_request(request)
+            user_id = route_parameters[0]
+
+            user = session.query(User).filter(User.id == user_id).first()
+
+            if data["username"] is not None:
+                user.username = data["username"]
+            if data["password"] is not None:
+                user.password = data["password"]
+
+            session.commit()
+
+            return json.loads(user.__repr__()), 200
 
         if method == "GET" and path == "/users":
             users = [json.loads(user.__repr__()) for user in session.query(User).all()]
