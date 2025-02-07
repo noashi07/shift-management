@@ -2,8 +2,6 @@ import socket
 import threading
 import json
 
-from sqlalchemy import update
-
 from models.user import User
 from models.db.db import get_session, init_db
 
@@ -49,19 +47,39 @@ def handle_routing(request):
 
             return json.loads(user.__repr__()), 200
 
-        if method == "GET" and path == "/users":
+        if method == "DELETE" and 'user' in path:
+            # חילוץ ה-ID של המשתמש מהנתיב
+            user_id = route_parameters[0]
+
+            # חיפוש המשתמש במסד הנתונים
+            user = session.query(User).filter(User.id == user_id).first()
+
+            # אם המשתמש לא נמצא, החזר שגיאה
+            if user is None:
+                return {"status": "error", "message": "User not found."}, 404
+
+            # מחיקת המשתמש מהמסד
+            try:
+                session.delete(user)  # מחיקת המשתמש מה-session
+                session.commit()  # שמירת השינויים במסד
+                return {"status": "success", "message": f"User with ID {user_id} deleted successfully."}, 200
+            except Exception as e:
+                session.rollback()  # חזרה לשינוי קודם במקרה של שגיאה
+                return {"status": "error", "message": str(e)}, 500
+
+        if method == "GET" and 'user' in path:
             users = [json.loads(user.__repr__()) for user in session.query(User).all()]
 
             return users, 200
 
-        if method == "POST" and path == "/user":
+        if method == "POST" and 'user' in path:
             data = extract_body_from_request(request)
 
             # יצירת משתמש חדש עם שם משתמש וסיסמא מתוך הבקשה
             new_user = User(username=data['username'], password=data['password'])
             session.add(new_user)
             session.commit()
-            return new_user.__repr__(), 200
+            return json.loads(new_user.__repr__()), 200
 
         return [{"error": "Not Found"}], 404
     except Exception as err:
