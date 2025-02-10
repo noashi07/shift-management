@@ -1,14 +1,19 @@
-from PyQt6.QtWidgets import QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
-import socket
+import json
+
+import requests
+from PyQt6.QtWidgets import QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
+
+import tkinter as tk
+from tkinter import messagebox
 
 
 class Login(QWidget):
-    def __init__(self, client_socket: socket.socket, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Login Page")
         self.resize(300, 150)
 
-        self.client_socket = client_socket
+        self.main_stack = parent
 
         # יצירת שדות קלט (user_name, password)
         self.user_name_label = QLabel("שם משתמש:")
@@ -38,21 +43,25 @@ class Login(QWidget):
 
         # אם יש טקסט בשני השדות, שלח את ההודעה
         if user_name_text and user_password_text:
-            message = f"LOGIN_{user_name_text}_{user_password_text}"
-            try:
-                # שלח את ההודעה לשרת
-                self.client_socket.send(message.encode('utf-8'))
-                print(f"Sent to server: {message}")
+            x = requests.post('http://localhost:8080/user/login',
+                              data=json.dumps({'username': user_name_text, 'password': user_password_text}))
+            response = x.json()
+            if 'error' in response:
+                error_message = response.get('reason', 'Unknown error occurred')
+                show_error_message(error_message)
+            else:
+                pass
 
-                # קבל תשובה מהשרת
-                response = self.client_socket.recv(1024).decode('utf-8')
-                print(f"Received from server: {response}")
-
-            except Exception as e:
-                print(f"Error sending message: {e}")
         else:
             # אם אחד מהשדות ריק, הצג הודעה מתאימה בשדות
             if not user_name_text:
                 self.user_name.setText("No username to send")
             if not user_password_text:
                 self.password.setText("No password to send")
+
+
+def show_error_message(error_message):
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    messagebox.showerror("Login Error", error_message)
+    root.quit()

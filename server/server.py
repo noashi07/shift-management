@@ -69,8 +69,19 @@ def handle_routing(request):
 
         if method == "GET" and 'user' in path:
             users = [json.loads(user.__repr__()) for user in session.query(User).all()]
-
             return users, 200
+
+        if method == "POST" and 'user/login' in path:
+            session.query()
+
+            data = extract_body_from_request(request)
+            try:
+                user = session.query(User).filter(User.username == str(data['username']),
+                                                  User.password == str(data['password'])).first()
+                return json.loads(user.__repr__()), 200
+            except:
+                return {'error': 'Not Found',
+                        'reason': f"User with username {data['username']} not found in the db. Password might be wrong"}, 404
 
         if method == "POST" and 'user' in path:
             data = extract_body_from_request(request)
