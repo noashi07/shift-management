@@ -100,15 +100,17 @@ def handle_routing(request):
 
 def handle_request(client_socket):
     try:
+        # get request the client send
         request = client_socket.recv(1024).decode()
 
         # אם התהליך הצליח נקבל קוד 200 ואובייקט מסוג USER שנוצר מהמידע ששלח הלקוח
         response_body, status_code = handle_routing(request)
-        # ממיר את האובביט מסוג User ל-json
+        # convert user object to string
         response_body_json = json.dumps(response_body)
 
         status_message = "OK" if status_code == 200 else "Error"
 
+        # build HTTP response
         response = (f"HTTP/1.1 {status_code} {status_message}\r\n"
                     f"Content-Type: application/json\r\n"
                     f"Content-Length: {len(response_body_json)}\r\n\r\n"
@@ -122,6 +124,7 @@ def handle_request(client_socket):
 
 
 def start_server(hostname: str, port: int):
+    # create socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((hostname, port))
     server_socket.listen(5)
@@ -129,9 +132,11 @@ def start_server(hostname: str, port: int):
 
     try:
         while True:
+            # accept new connection
             client_socket, client_address = server_socket.accept()
             print(f"Connection from {client_address}")
 
+            # handle client in separate thread
             client_thread = threading.Thread(target=handle_request, args=(client_socket,))
             client_thread.daemon = True
             client_thread.start()
