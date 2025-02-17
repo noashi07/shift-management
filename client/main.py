@@ -16,8 +16,8 @@ class MainStack(QWidget):
         self.host = '127.0.0.1'
         self.port = 12345
 
-        login_widget = Login()
-        shifts_widget = Shifts()
+        login_widget = Login(self)
+        shifts_widget = Shifts(self)
 
         self.stacked = QStackedWidget(self)
         self.stacked.addWidget(login_widget)

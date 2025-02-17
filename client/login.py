@@ -1,8 +1,6 @@
 import json
-
 import requests
 from PyQt6.QtWidgets import QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
-
 import tkinter as tk
 from tkinter import messagebox
 
@@ -37,23 +35,26 @@ class Login(QWidget):
         self.setLayout(layout)
 
     def send_message(self):
-        # קבלת הטקסט מהשדות
+        # Get the text from the input fields
         user_name_text = self.user_name.text()
         user_password_text = self.password.text()
 
-        # אם יש טקסט בשני השדות, שלח את ההודעה
+        # If both fields are filled, send the message
         if user_name_text and user_password_text:
+            # Send the login request
             x = requests.post('http://localhost:8080/user/login',
                               data=json.dumps({'username': user_name_text, 'password': user_password_text}))
             response = x.json()
+
             if 'error' in response:
+                # If there is an error, show an error message
                 error_message = response.get('reason', 'Unknown error occurred')
                 show_error_message(error_message)
             else:
-                pass
-
+                # If login is successful, switch to the shifts widget
+                self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(1))  # 1 refers to shifts_widget
         else:
-            # אם אחד מהשדות ריק, הצג הודעה מתאימה בשדות
+            # If one of the fields is empty, set appropriate error text
             if not user_name_text:
                 self.user_name.setText("No username to send")
             if not user_password_text:
