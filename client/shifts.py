@@ -38,7 +38,6 @@ class Shifts(QWidget):
             self.table_widget.setItem(row, 6, QTableWidgetItem(friday))
             self.table_widget.setItem(row, 7, QTableWidgetItem(saturday))
 
-
         # עיצוב הטבלה עם רקע אפור
         self.table_widget.setStyleSheet("""
              QTableWidget {
