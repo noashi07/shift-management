@@ -12,28 +12,31 @@ class Shifts(QWidget):
 
         # קביעת מספר השורות והעמודות בטבלה
         self.table_widget.setRowCount(5)  # 5 שורות
-        self.table_widget.setColumnCount(3)  # 3 עמודות
+        self.table_widget.setColumnCount(8)  # 7 עמודות
 
         # קביעת שמות העמודות
-        self.table_widget.setHorizontalHeaderLabels(["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"])
+        self.table_widget.setHorizontalHeaderLabels(["Time","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"])
+
 
         # הוספת נתונים לטבלה
         data = [
-            ("", " ", ""),
-            ("", " ", ""),
-            ("", " ", ""),
-            ("", " ", ""),
-            ("", " ", ""),
+            ("07:00", " ", " ", " ", " ", " ", " ",""),
+            ("07:00", " ", " ", " ", " ", " ", " ",""),
+            ("07:00", " ", " ", " ", " ", " ", " ",""),
+            ("12:00", " ", " ", " ", " ", " ", " ",""),
+            ("16:00", " ", " ", " ", " ", " ", " ", ""),
+            ("16:00", " ", " ", " ", " ", " ", " ", ""),
+            ("16:00", " ", " ", " ", " ", " ", " ", ""),
         ]
-
-        for row, (sunday, monday, tuesday, wednesday, thursday, friday, saturday) in enumerate(data):
-            self.table_widget.setItem(row, 0, QTableWidgetItem(sunday))  # Sunday column (index 0)
-            self.table_widget.setItem(row, 1, QTableWidgetItem(monday))  # Monday column (index 1)
-            self.table_widget.setItem(row, 2, QTableWidgetItem(tuesday))  # Tuesday column (index 2)
-            self.table_widget.setItem(row, 3, QTableWidgetItem(wednesday))  # Wednesday column (index 3)
-            self.table_widget.setItem(row, 4, QTableWidgetItem(thursday))  # Thursday column (index 4)
-            self.table_widget.setItem(row, 5, QTableWidgetItem(friday))  # Friday column (index 5)
-            self.table_widget.setItem(row, 6, QTableWidgetItem(saturday))  # Saturday column (index 6)
+        for row, (time, sunday, monday, tuesday, wednesday, thursday, friday, saturday) in enumerate(data):
+            self.table_widget.setItem(row, 0, QTableWidgetItem(time))
+            self.table_widget.setItem(row, 1, QTableWidgetItem(sunday))
+            self.table_widget.setItem(row, 2, QTableWidgetItem(monday))
+            self.table_widget.setItem(row, 3, QTableWidgetItem(tuesday))
+            self.table_widget.setItem(row, 4, QTableWidgetItem(wednesday))
+            self.table_widget.setItem(row, 5, QTableWidgetItem(thursday))
+            self.table_widget.setItem(row, 6, QTableWidgetItem(friday))
+            self.table_widget.setItem(row, 7, QTableWidgetItem(saturday))
 
         # עיצוב הטבלה עם רקע אפור
         self.table_widget.setStyleSheet("""
@@ -43,6 +46,7 @@ class Shifts(QWidget):
              }
              QTableWidget::item {
                  padding: 5px;
+                 color: black;
              }
              QHeaderView::section {
                  background-color: gray;
