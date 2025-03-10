@@ -47,6 +47,43 @@ class Shifts(QWidget):
                 padding: 5px;
             }
         """)
+        # קביעת מספר השורות והעמודות בטבלה
+        self.table_widget.setRowCount(7)  # 5 שורות
+        self.table_widget.setColumnCount(7)  # 7 עמודות
+
+        # קביעת שמות העמודות
+        self.table_widget.setHorizontalHeaderLabels(
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+
+        # הוספת נתונים לטבלה
+        data = [
+            ("", "", "", "", "", "", ""),
+        ]
+        for row, ( sunday, monday, tuesday, wednesday, thursday, friday, saturday) in enumerate(data):
+            self.table_widget.setItem(row, 1, QTableWidgetItem(sunday))
+            self.table_widget.setItem(row, 2, QTableWidgetItem(monday))
+            self.table_widget.setItem(row, 3, QTableWidgetItem(tuesday))
+            self.table_widget.setItem(row, 4, QTableWidgetItem(wednesday))
+            self.table_widget.setItem(row, 5, QTableWidgetItem(thursday))
+            self.table_widget.setItem(row, 6, QTableWidgetItem(friday))
+            self.table_widget.setItem(row, 7, QTableWidgetItem(saturday))
+
+        # עיצוב הטבלה עם רקע אפור
+        self.table_widget.setStyleSheet("""
+             QTableWidget {
+                 background-color: lightgray;  /* Gray background */
+                 border: 1px solid black;
+             }
+             QTableWidget::item {
+                 padding: 5px;
+                 color: black;
+             }
+             QHeaderView::section {
+                 background-color: gray;
+                 color: black;  /* Header text in black */
+                 padding: 5px;
+             }
+         """)
 
         title_label = QLabel("WORK", self)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
