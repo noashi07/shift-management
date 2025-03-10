@@ -3,21 +3,21 @@ import threading
 import json
 
 from models.user import User
+from models.table import TableData
 from models.db.db import get_session, init_db
 
 session = get_session()
 init_db()
 
-# Simulated table data for streaming
-table_data = [[""] * 7 for _ in range(7)]
 connected_clients = []
 clients_lock = threading.Lock()
 
 
-# Original HTTP handling logic moved into a function
 def handle_http_request(client_socket):
     try:
         request = client_socket.recv(1024).decode()
+        if not request:
+            raise ValueError("Empty request received")
         print(request)
 
         def extract_body_from_request(request: str):
@@ -36,14 +36,18 @@ def handle_http_request(client_socket):
 
                 if method == "PATCH" and 'user' in path:
                     data = extract_body_from_request(request)
+                    if not data or 'username' not in data or 'password' not in data:
+                        return {"error": "Bad Request", "reason": "Missing username or password"}, 400
                     user_id = route_parameters[0]
                     user = session.query(User).filter(User.id == user_id).first()
-                    if data["username"] is not None:
-                        user.username = data["username"]
-                    if data["password"] is not None:
-                        user.password = data["password"]
-                    session.commit()
-                    return json.loads(user.__repr__()), 200
+                    if user:
+                        if data["username"] is not None:
+                            user.username = data["username"]
+                        if data["password"] is not None:
+                            user.password = data["password"]
+                        session.commit()
+                        return json.loads(user.__repr__()), 200
+                    return {"error": "Not Found", "reason": "User not found"}, 404
 
                 if method == "DELETE" and 'user' in path:
                     user_id = route_parameters[0]
@@ -64,20 +68,26 @@ def handle_http_request(client_socket):
 
                 if method == "POST" and 'user/login' in path:
                     data = extract_body_from_request(request)
+                    if not data or 'username' not in data or 'password' not in data:
+                        return {"error": "Bad Request", "reason": "Missing username or password"}, 400
                     try:
                         user = session.query(User).filter(User.username == str(data['username']),
                                                           User.password == str(data['password'])).first()
-                        return json.loads(user.__repr__()), 200
-                    except:
+                        if user:
+                            return json.loads(user.__repr__()), 200
                         return {'error': 'Not Found',
-                                'reason': f"User with username {data['username']} not found in the db. Password might be wrong"}, 404
+                                'reason': f"User with username {data['username']} not found or password incorrect"}, 404
+                    except Exception as e:
+                        return {'error': 'Server Error', 'reason': str(e)}, 500
 
                 if method == "POST" and 'user' in path:
                     data = extract_body_from_request(request)
+                    if not data or 'username' not in data or 'password' not in data:
+                        return {"error": "Bad Request", "reason": "Missing username or password"}, 400
                     new_user = User(username=data['username'], password=data['password'])
                     session.add(new_user)
                     session.commit()
-                    return json.loads(new_user.__repr__()), 200
+                    return json.loads(new_user.__repr__()), 201
 
                 return [{"error": "Not Found"}], 404
             except Exception as err:
@@ -86,20 +96,26 @@ def handle_http_request(client_socket):
 
         response_body, status_code = handle_routing(request)
         response_body_json = json.dumps(response_body)
-        status_message = "OK" if status_code == 200 else "Error"
+        status_message = "OK" if status_code in (200, 201) else "Error"
         response = (f"HTTP/1.1 {status_code} {status_message}\r\n"
                     f"Content-Type: application/json\r\n"
                     f"Content-Length: {len(response_body_json)}\r\n\r\n"
                     f"{response_body_json}")
         client_socket.sendall(response.encode())
     except Exception as e:
-        print(f"Error handling HTTP request: {e}")
+        error_response = json.dumps({"error": "Server Error", "message": str(e)})
+        response = f"HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: {len(error_response)}\r\n\r\n{error_response}"
+        try:
+            client_socket.sendall(response.encode())
+        except:
+            print(f"Failed to send error response: {e}")
     finally:
         client_socket.close()
 
 
 def start_http_server(hostname: str, port: int):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((hostname, port))
     server_socket.listen(5)
     print(f"HTTP Server started on http://{hostname}:{port}")
@@ -116,14 +132,41 @@ def start_http_server(hostname: str, port: int):
         server_socket.close()
 
 
-# TCP Server for Table Streaming
+def load_table_data_from_db():
+    table = [[""] * 7 for _ in range(7)]
+    entries = session.query(TableData).all()
+    for entry in entries:
+        if 0 <= entry.row < 7 and 0 <= entry.column < 7:  # Bounds checking
+            table[entry.row][entry.column] = entry.data
+    return table
+
+
+def save_table_data_to_db(row, col, value):
+    if not (0 <= row < 7 and 0 <= col < 7):
+        print(f"Invalid table coordinates: row={row}, col={col}")
+        return
+    entry = session.query(TableData).filter(TableData.row == row, TableData.column == col).first()
+    if entry:
+        if value == "":
+            session.delete(entry)  # Remove entry if value is cleared
+        else:
+            entry.data = value
+    else:
+        if value != "":  # Only add non-empty values
+            entry = TableData(row=row, column=col, data=value)
+            session.add(entry)
+    session.commit()
+
+
 def broadcast_table_update():
+    table_data = load_table_data_from_db()
     message = json.dumps({"type": "table_update", "data": table_data})
     with clients_lock:
         for client in connected_clients[:]:
             try:
                 client.sendall(message.encode())
-            except:
+            except Exception as e:
+                print(f"Failed to broadcast to client: {e}")
                 connected_clients.remove(client)
 
 
@@ -131,8 +174,8 @@ def handle_tcp_client(client_socket, address):
     print(f"TCP connection from {address}")
     with clients_lock:
         connected_clients.append(client_socket)
-    client_socket.sendall(json.dumps({"type": "table_update", "data": table_data}).encode())
     try:
+        client_socket.sendall(json.dumps({"type": "table_update", "data": load_table_data_from_db()}).encode())
         while True:
             data = client_socket.recv(1024).decode()
             if not data:
@@ -140,7 +183,7 @@ def handle_tcp_client(client_socket, address):
             message = json.loads(data)
             if message["type"] == "update_table":
                 row, col, value = message["row"], message["col"], message["value"]
-                table_data[row][col] = value
+                save_table_data_to_db(row, col, value)
                 broadcast_table_update()
     except Exception as e:
         print(f"TCP client {address} disconnected: {e}")
@@ -153,6 +196,7 @@ def handle_tcp_client(client_socket, address):
 
 def start_tcp_server(hostname: str, port: int):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((hostname, port))
     server_socket.listen(5)
     print(f"TCP Server started on {hostname}:{port}")
@@ -173,7 +217,5 @@ if __name__ == "__main__":
     http_port = 8080
     tcp_port = 8081
 
-    # Start HTTP server in a thread
     threading.Thread(target=start_http_server, args=(hostname, http_port), daemon=True).start()
-    # Start TCP server in the main thread
     start_tcp_server(hostname, tcp_port)
