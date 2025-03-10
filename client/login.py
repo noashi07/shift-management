@@ -13,48 +13,48 @@ class Login(QWidget):
 
         self.main_stack = parent
 
-        # יצירת שדות קלט (user_name, password)
         self.user_name_label = QLabel("שם משתמש:")
         self.user_name = QLineEdit(parent=self)
 
         self.password_label = QLabel("סיסמה:")
         self.password = QLineEdit(parent=self)
+        self.password.setEchoMode(QLineEdit.EchoMode.Password)  # Hide password input
 
-        # יצירת כפתור לשליחת ההודעה
         action_button = QPushButton(parent=self, text="Send Message")
-        # חיבור הכפתור לפונקציה שתשלח את ההודעה
         action_button.clicked.connect(self.send_message)
 
-        # הגדרת פריסת התצוגה (Layout)
         layout = QGridLayout()
-        layout.addWidget(self.user_name_label, 0, 0, 1, 2)  # שדה שם משתמש
-        layout.addWidget(self.user_name, 1, 0, 1, 2)  # שדה שם משתמש
-        layout.addWidget(self.password_label, 2, 0, 1, 2)  # שדה שם משתמש
-        layout.addWidget(self.password, 3, 0, 1, 2)  # שדה סיסמה
-        layout.addWidget(action_button, 4, 0, 1, 2)  # כפתור שליחה
+        layout.addWidget(self.user_name_label, 0, 0, 1, 2)
+        layout.addWidget(self.user_name, 1, 0, 1, 2)
+        layout.addWidget(self.password_label, 2, 0, 1, 2)
+        layout.addWidget(self.password, 3, 0, 1, 2)
+        layout.addWidget(action_button, 4, 0, 1, 2)
         self.setLayout(layout)
 
     def send_message(self):
-        # Get the text from the input fields
-        user_name_text = self.user_name.text()
-        user_password_text = self.password.text()
+        user_name_text = self.user_name.text().strip()
+        user_password_text = self.password.text().strip()
 
-        # If both fields are filled, send the message
         if user_name_text and user_password_text:
-            # Send the login request
-            x = requests.post('http://localhost:8080/user/login',
-                              data=json.dumps({'username': user_name_text, 'password': user_password_text}))
-            response = x.json()
+            try:
+                headers = {'Content-Type': 'application/json'}  # Add proper headers
+                payload = json.dumps({'username': user_name_text, 'password': user_password_text})
+                response = requests.post(
+                    f'http://{self.main_stack.host}:{self.main_stack.http_port}/user/login',
+                    data=payload,
+                    headers=headers
+                )
 
-            if 'error' in response:
-                # If there is an error, show an error message
-                error_message = response.get('reason', 'Unknown error occurred')
-                show_error_message(error_message)
-            else:
-                # If login is successful, switch to the shifts widget
-                self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(1))  # 1 refers to shifts_widget
+                response.raise_for_status()  # Raise exception for bad status codes
+                data = response.json()
+
+                if 'error' in data:
+                    show_error_message(data.get('reason', 'Unknown error occurred'))
+                else:
+                    self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(1))
+            except requests.exceptions.RequestException as e:
+                show_error_message(f"Connection error: {str(e)}")
         else:
-            # If one of the fields is empty, set appropriate error text
             if not user_name_text:
                 self.user_name.setText("No username to send")
             if not user_password_text:
@@ -63,6 +63,6 @@ class Login(QWidget):
 
 def show_error_message(error_message):
     root = tk.Tk()
-    root.withdraw()  # Hide the main window
+    root.withdraw()
     messagebox.showerror("Login Error", error_message)
-    root.quit()
+    root.destroy()  # Properly close the Tk instance

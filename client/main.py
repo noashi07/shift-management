@@ -1,9 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QWidget, QStackedWidget, QVBoxLayout, QApplication
 import socket
-# QVBoxLayout-פריסת תצוגה בצורה אנכית(אחד מתחת לשני)
-# QWidget- מחלקה בסיסית לאלמנטים גרפיים שמוצגים כמו: כפתור, תיבה ועוד.
-# QApplication-מנהל את האירועים במערכת
 
 from login import Login
 from shifts import Shifts
@@ -13,8 +10,9 @@ class MainStack(QWidget):
     def __init__(self, *args, **kwargs):
         super(MainStack, self).__init__(*args, **kwargs)
 
-        self.host = '127.0.0.1'
-        self.port = 12345
+        self.host = 'localhost'
+        self.http_port = 8080  # Match server.py HTTP port
+        self.tcp_port = 8081  # Match server.py TCP port
 
         login_widget = Login(self)
         shifts_widget = Shifts(self)
