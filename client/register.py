@@ -3,6 +3,7 @@ import requests
 from PyQt6.QtWidgets import QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
 import tkinter as tk
 from tkinter import messagebox
+import hashlib
 
 
 class Register(QWidget):
@@ -44,8 +45,11 @@ class Register(QWidget):
 
         if user_name_text and user_password_text:
             try:
-                headers = {'Content-Type': 'application/json'}  # Add proper headers
-                payload = json.dumps({'username': user_name_text, 'password': user_password_text})
+                # Hash the password using SHA-256
+                hashed_password = hashlib.sha256(user_password_text.encode('utf-8')).hexdigest()
+
+                headers = {'Content-Type': 'application/json'}
+                payload = json.dumps({'username': user_name_text, 'password': hashed_password})
                 response = requests.post(
                     f'http://{self.main_stack.host}:{self.main_stack.http_port}/user',
                     data=payload,
