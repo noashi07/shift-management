@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 
-class Login(QWidget):
+class Register(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Login Page")
@@ -20,11 +20,11 @@ class Login(QWidget):
         self.password = QLineEdit(parent=self)
         self.password.setEchoMode(QLineEdit.EchoMode.Password)  # Hide password input
 
-        action_button = QPushButton(parent=self, text="Login")
+        action_button = QPushButton(parent=self, text="Register")
         action_button.clicked.connect(self.send_message)
 
-        register_button = QPushButton(parent=self, text="Navigate To Register")
-        register_button.clicked.connect(self.navigate_to_register)
+        login_button = QPushButton(parent=self, text="Navigate To Login")
+        login_button.clicked.connect(self.navigate_to_login)
 
         layout = QGridLayout()
         layout.addWidget(self.user_name_label, 0, 0, 1, 2)
@@ -32,11 +32,11 @@ class Login(QWidget):
         layout.addWidget(self.password_label, 2, 0, 1, 2)
         layout.addWidget(self.password, 3, 0, 1, 2)
         layout.addWidget(action_button, 4, 0, 1, 2)
-        layout.addWidget(register_button, 5, 0, 1, 2)
+        layout.addWidget(login_button, 5, 0, 1, 2)
         self.setLayout(layout)
 
-    def navigate_to_register(self):
-        self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(2))
+    def navigate_to_login(self):
+        self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(0))
 
     def send_message(self):
         user_name_text = self.user_name.text().strip()
@@ -47,18 +47,18 @@ class Login(QWidget):
                 headers = {'Content-Type': 'application/json'}  # Add proper headers
                 payload = json.dumps({'username': user_name_text, 'password': user_password_text})
                 response = requests.post(
-                    f'http://{self.main_stack.host}:{self.main_stack.http_port}/user/login',
+                    f'http://{self.main_stack.host}:{self.main_stack.http_port}/user',
                     data=payload,
                     headers=headers
                 )
 
-                response.raise_for_status()  # Raise exception for bad status codes
+                response.raise_for_status()
                 data = response.json()
 
                 if 'error' in data:
                     show_error_message(data.get('reason', 'Unknown error occurred'))
                 else:
-                    self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(1))
+                    self.main_stack.stacked.setCurrentWidget(self.main_stack.stacked.widget(0))
             except requests.exceptions.RequestException as e:
                 show_error_message(f"Connection error: {str(e)}")
         else:

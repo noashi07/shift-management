@@ -1,9 +1,9 @@
 import sys
 from PyQt6.QtWidgets import QWidget, QStackedWidget, QVBoxLayout, QApplication
-import socket
 
 from login import Login
 from shifts import Shifts
+from register import Register
 
 
 class MainStack(QWidget):
@@ -16,10 +16,12 @@ class MainStack(QWidget):
 
         login_widget = Login(self)
         shifts_widget = Shifts(self)
+        register_widget = Register(self)
 
         self.stacked = QStackedWidget(self)
         self.stacked.addWidget(login_widget)
         self.stacked.addWidget(shifts_widget)
+        self.stacked.addWidget(register_widget)
 
         self.stacked.setCurrentWidget(login_widget)
 
