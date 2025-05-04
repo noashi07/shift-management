@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -20,3 +22,26 @@ def init_db():
 def get_session():
     """"This is used to return the session (actual connection) to the db.  """
     return Session()
+
+import subprocess
+from datetime import datetime
+
+def backup_database():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = f"shift_backup_{timestamp}.sql"
+
+    # Set password in environment variable
+    env = os.environ.copy()
+    env["PGPASSWORD"] = "postgres"  # ⚠️ Don't hardcode passwords in production
+
+    try:
+        subprocess.run([
+            "pg_dump",
+            "-U", "postgres",
+            "-F", "c",  # custom format
+            "-f", backup_file,
+            "shift"
+        ], check=True, env=env)
+        print(f"✅ Backup successful: {backup_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Backup failed: {e}")

@@ -5,6 +5,7 @@ import json
 from models.user import User
 from models.table import TableData
 from models.db.db import get_session, init_db
+from models.db.db import backup_database
 
 session = get_session()
 init_db()
@@ -156,6 +157,7 @@ def save_table_data_to_db(row, col, value):
             entry = TableData(row=row, column=col, data=value)
             session.add(entry)
     session.commit()
+    backup_database()
 
 
 def broadcast_table_update():

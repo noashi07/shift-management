@@ -3,6 +3,7 @@ import socket
 import threading
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 from PyQt6.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QLabel
+# from PySide6.QtWidgets import QMessageBox
 
 
 class SignalEmitter(QObject):
@@ -118,6 +119,12 @@ class Shifts(QWidget):
                     message = json.loads(data)
                     if message["type"] == "table_update":
                         self.signals.table_updated.emit(message["data"])
+                        # msg_box = QMessageBox()
+                        # msg_box.setIcon(QMessageBox.Icon.Information)
+                        # msg_box.setWindowTitle("Update")
+                        # msg_box.setText("Table was updated")
+                        # msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        # msg_box.exec()
             except Exception as e:
                 print(f"Error receiving data: {e}")
                 self.running = False
