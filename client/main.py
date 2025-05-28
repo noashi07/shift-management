@@ -16,6 +16,7 @@ class MainStack(QWidget):
 
         login_widget = Login(self)
         shifts_widget = Shifts(self)
+        shifts_widget.setGeometry(100,200,700,800)
         register_widget = Register(self)
 
         self.stacked = QStackedWidget(self)

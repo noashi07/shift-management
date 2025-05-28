@@ -55,7 +55,7 @@ class Login(QWidget):
                     headers=headers
                 )
 
-                response.raise_for_status()
+                #response.raise_for_status()
                 data = response.json()
 
                 if 'error' in data:
@@ -66,9 +66,9 @@ class Login(QWidget):
                 show_error_message(f"Connection error: {str(e)}")
         else:
             if not user_name_text:
-                self.user_name.setText("No username to send")
+                show_error_message(f"no username entered")
             if not user_password_text:
-                self.password.setText("No password to send")
+                show_error_message(f"no password entered")
 
 
 def show_error_message(error_message):

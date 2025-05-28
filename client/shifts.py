@@ -2,7 +2,11 @@ import json
 import socket
 import threading
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
-from PyQt6.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QLabel, QErrorMessage
+
+from client.login import show_error_message
+
+
 # from PySide6.QtWidgets import QMessageBox
 
 
@@ -13,7 +17,7 @@ class SignalEmitter(QObject):
 class Shifts(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
+        self.setGeometry(100,200,1000,500)
         self.host = parent.host
         self.port = parent.tcp_port
         self.socket = None
@@ -110,6 +114,7 @@ class Shifts(QWidget):
             threading.Thread(target=self.listen_to_server, daemon=True).start()
         except Exception as e:
             print(f"Failed to connect to server: {e}")
+            QErrorMessage("Error with client, all changes will not be saved")
 
     def listen_to_server(self):
         while self.running:
@@ -126,6 +131,7 @@ class Shifts(QWidget):
                         # msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
                         # msg_box.exec()
             except Exception as e:
+                QErrorMessage("Error with client, all changes will not be saved")
                 print(f"Error receiving data: {e}")
                 self.running = False
                 break
@@ -147,6 +153,7 @@ class Shifts(QWidget):
         try:
             self.socket.sendall(message.encode())
         except Exception as e:
+            QErrorMessage("Error with client, all changes will not be saved")
             print(f"Error sending update: {e}")
 
     def update_table_from_server(self, table_data):

@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 
+
 from models.user import User
 from models.table import TableData
 from models.db.db import get_session, init_db
@@ -85,8 +86,11 @@ def handle_http_request(client_socket):
                     data = extract_body_from_request(request)
                     if not data or 'username' not in data or 'password' not in data:
                         return {"error": "Bad Request", "reason": "Missing username or password"}, 400
+                    if session.query(User).filter(User.username == str(data['username'])).all():
+                        return {"error": "Bad Request", "reason": "Username taken"}, 400
                     new_user = User(username=data['username'], password=data['password'])
                     session.add(new_user)
+
                     session.commit()
                     return json.loads(new_user.__repr__()), 201
 
